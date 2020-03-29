@@ -24,7 +24,7 @@ Key libraries include `Scrapy` · `PyMySQL` · `Numpy` · `Pandas` · `Matplotli
 
 * ### Scrapy Framework
 
-  The following raw data of a fund will be collected using spider [`em.py`](https://github.com/ZxZ7/ZFundPredictor/blob/master/eastm/spiders/em.py):
+  The following raw data of a fund will be collected using spider `em.py`:
   
     - Fund Name, Ticker, Type (stock/stock index/bond/hybrid)
     - Current Investment Style (large-/mid-/small-cap, value/growth)
@@ -91,7 +91,7 @@ The current predicting algorithm is based on LSTM with sliding windows.
   
 * ### Splitting Method
   
-  <img src="https://github.com/ZxZ7/ZFundPredictor/blob/aa3727bfeed8cbe4b80134c9a5fb7d5fb4ce3f31/splitting_strategy.png" width="700">
+  <img src="https://github.com/ZxZ7/ZFundPredictor/blob/master/splitting_strategy.png" width="700">
  
  
 * ### LSTM Time Series
