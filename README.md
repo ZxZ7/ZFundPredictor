@@ -1,7 +1,7 @@
 # ZFundPredictor (ver. 1.1)
 
 
-This project aims to build a stable price predictor for open-end mutual funds that available in China's fund market.
+This project aims to build a stable price predictor for open-end mutual funds available in China's fund market.
 
 It consists of:
 
