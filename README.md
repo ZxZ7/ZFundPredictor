@@ -134,7 +134,7 @@ The current predicting algorithm is based on LSTM with sliding windows.
 ## Future plan
 
   - The future version will introduce categorical features after the LSTM time series forcasting process to account for individual effects and to provide more stable predictions. 
-  - So far, the models has only been trained and tested on funds that mainly invest in stocks. In the future, this predictor might be generalized to include bond funds as well.
+  - So far, the models have only been trained and tested on funds that mainly invest in stocks. In the future, this predictor might be generalized to include bond funds as well.
   - A fund portfolio builder and monitor...
 
 <br>
