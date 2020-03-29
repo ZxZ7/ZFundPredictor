@@ -81,7 +81,7 @@ The current predicting algorithm is based on LSTM with sliding windows.
 
     - **Lookback**: the length of a sliding window, indicating how many periods we are looking back to the past.
     - **Lookahead**: the number of periods that we want to predict into the future.
-    - **EMA**: the x-day exponential moving average, a technical metric that commonly adopted by quants. Frequently adopted 
+    - **EMA**: the x-day exponential moving average, a technical metric that commonly adopted by quants. 
     
   Currently in use:<br>
     - **[`lookback`, `lookahead`]:** [50, 1], [120, 2] and [120, 5]
