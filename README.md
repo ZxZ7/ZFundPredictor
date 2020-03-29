@@ -35,7 +35,7 @@ Key libraries include `Scrapy` · `PyMySQL` · `Numpy` · `Pandas` · `Matplotli
     - Historical Prices from launching
     - Performance Metrics: Fund Returns (recent 1d/1m/6m/1y/2y/3y), Standard Deviation (recent 1y/2y/3y), Sharpe Ratio (recent 1y/2y/3y)
 
-  Note: data are updated daily by the scraped website, except for industry allocation and asset allocation, which are updated per reporting period (season).
+  Note: data are updated daily by the scraped website, except for asset size, asset allocation and industry allocation, which are updated per reporting period (season).
   
   Complete source code of this framework can be found [here](https://github.com/ZxZ7/ZFundPredictor/tree/master/eastm).
 
