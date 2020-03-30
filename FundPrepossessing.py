@@ -15,7 +15,7 @@ sns.set_context("notebook")
 ## Getting data from MySQL
 connection = pymysql.connect(host='localhost',
                              user='root',
-                             password='*******',
+                             password='******',
                              db='funds',
                              charset='utf8mb4')
 '''
@@ -57,8 +57,11 @@ st_invariants = pd.read_sql(sql, connection)
 connection.close()
 
 
-## Downloading data of index
+
 def get_index(index_type='stock'):
+    '''
+    Import data of index.
+    '''
     if index_type == 'stock':
         sindex = yf.download("000001.ss", start=str(funds_sql['hdate'].min()),
                              end=str(funds_sql['hdate'].max()+timedelta(days=1)))
@@ -71,15 +74,18 @@ def get_index(index_type='stock'):
         return sindex
 
     if index_type == 'bond':
-        tbond = pd.read_csv(r'G:\DS_DA_BA\funds\China 10-Year Bond Yield Historical Data.csv')
+        tbond = pd.read_csv(r'China 10-Year Bond Yield Historical Data.csv')
         tbond = tbond.set_index(pd.to_datetime(tbond['Date']).dt.date).sort_index()
         tbond['tbond_d'] = tbond['Change %'].str.rstrip('%').astype('float') / 100.0
         tbond.drop(columns=['Date', 'Change %'], inplace=True)
         return tbond
 
 
-## Dealing with missing data
+
 def find_missing_values(show_results):
+    '''
+    Find the funds with missing prices and returns the their tickers.
+    '''
     drop_tickers = funds_sql[funds_sql['accu_nav'].isnull()]['fticker'].unique()
     
     if show_results:
@@ -112,6 +118,9 @@ def find_missing_values(show_results):
 
 
 def count_days(show_results):
+    '''
+    Count trading days of the funds and return the tickers of funds with the most common length.
+    '''
     funds_length = funds_sql.groupby('fticker')['hdate'].count()
     count_per_length = funds_length.groupby(funds_length.values).count()
     
@@ -133,13 +142,19 @@ def count_days(show_results):
 
 
 def ticker_filter(show_results=True):
+    '''
+    Filter out the funds with missing values.
+    '''
     drop_tickers = find_missing_values(show_results)
     tickers_common_length = count_days(show_results)
     return np.array([t for t in tickers_common_length if t not in drop_tickers])
 
 
-## Building funds dataset
+
 def get_funds(selected_tickers, stock_index, bond_index=None, show_results=True):
+    '''
+    Build the `funds` dataset.
+    '''
     for ticker, histories in funds_sql.groupby('fticker'):
         if ticker in selected_tickers:
             if ticker == selected_tickers[0]:
@@ -193,7 +208,6 @@ def get_funds(selected_tickers, stock_index, bond_index=None, show_results=True)
     return funds_
 
 
-## Building categorical features
 
 industries = ['制造业', '金融业', '信息传输、软件和信息技术服务业', '房地产业',
               '交通运输、仓储和邮政业', '农、林、牧、渔业', '批发和零售业',
@@ -202,6 +216,9 @@ industries = ['制造业', '金融业', '信息传输、软件和信息技术服
               '电力、热力、燃气及水生产和供应业', '教育', '综合']
 
 def build_categories(funds):
+    '''
+    Build the `categorical` dataset.
+    '''
     categorical = pd.DataFrame(index=st_invariants['fticker'])
     
     # label categories
@@ -241,6 +258,9 @@ def build_categories(funds):
 
 
 def categorical_summary(categorical):
+    '''
+    Summarize and graph the `categorical` dataset.
+    '''
     industry_count = len(industries)
     dicts = [{'混合型':'hybrid', '股票型':'stock', '股票指数':'stock index'},
              {'大盘价值':'large value', '大盘平衡':'large balanced', '中盘成长':'large growth',
@@ -300,13 +320,17 @@ def categorical_summary(categorical):
      '教育':'Education'}
     
     industries_ = industries + [industry_dict[ind] for ind in industries]
-    industries_ = pd.DataFrame(np.array(industries_).reshape(2,-1), columns=industry_w.columns, index=['行业','Industry'])
+    industries_ = pd.DataFrame(np.array(industries_).reshape(2,-1),
+                               columns=industry_w.columns, index=['行业','Industry'])
     summary = industry_w.describe()[1:].applymap(lambda x: round(x,4))
     summary = pd.concat((industries_, summary),axis=0)
     return summary
 
 
 def quick_prepossessing():
+  '''
+  Generate the `funds` and `categorical` datasets without showing the process.
+  '''
   sindex = get_index()
   selected_tickers = ticker_filter(show_results=False)
   funds = get_funds(selected_tickers, sindex['sindex_r'], show_results=False)
