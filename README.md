@@ -30,7 +30,7 @@ Key libraries include `Scrapy` · `PyMySQL` · `Numpy` · `Pandas` · `Matplotli
     - Current Investment Style (large-/mid-/small-cap, value/growth)
     - Current Net Assets, Net Assets of the last two reporting periods
     - Current Asset Allocation (% of stock/bond/cash)
-    - Current Industry Allocation (top 3, and their respective weights)
+    - Current Industry Allocation (top 5, and their respective weights)
     - Manager Performance: Current Ranking Score in similar funds (between 0 and 1, the smaller the better)
     - Historical Prices from launching
     - Performance Metrics: Fund Returns (recent 1d/1m/6m/1y/2y/3y), Standard Deviation (recent 1y/2y/3y), Sharpe Ratio (recent 1y/2y/3y)
