@@ -84,7 +84,7 @@ def get_index(index_type='stock'):
 
 def find_missing_values(show_results):
     '''
-    Find the funds with missing prices and returns the their tickers.
+    Find the funds with missing prices and return their tickers.
     '''
     drop_tickers = funds_sql[funds_sql['accu_nav'].isnull()]['fticker'].unique()
     
@@ -329,7 +329,7 @@ def categorical_summary(categorical):
 
 def quick_prepossessing():
   '''
-  Generate the `funds` and `categorical` datasets without showing the process.
+  Generate `funds` and `categorical` datasets without showing the process.
   '''
   sindex = get_index()
   selected_tickers = ticker_filter(show_results=False)
