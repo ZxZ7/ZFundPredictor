@@ -328,12 +328,28 @@ def categorical_summary(categorical):
 
 
 def quick_prepossessing():
-  '''
-  Generate `funds` and `categorical` datasets without showing the process.
-  '''
-  sindex = get_index()
-  selected_tickers = ticker_filter(show_results=False)
-  funds = get_funds(selected_tickers, sindex['sindex_r'], show_results=False)
-  categorical = build_categories(funds)
+    '''
+    Generate the `funds` and `categorical` datasets without showing the process.
+    '''
+    sindex = get_index()
+    selected_tickers = ticker_filter(show_results=False)
+    funds = get_funds(selected_tickers, sindex['sindex_r'], show_results=False)
+    categorical = build_categories(funds)
 
-  return funds, categorical
+    return funds, categorical
+
+
+
+def save_files(path, date, funds, categorical):
+    funds.to_csv(path+f'funds_{date}.csv')
+    categorical.to_csv(path+f'funds/categorical_{date}.csv', index=False)
+
+
+def read_files(path, date):
+    funds = pd.read_csv(path+f'funds_{date}.csv')
+    funds = funds.set_index(pd.to_datetime(funds['Date']).dt.date).drop(columns='Date').sort_index()
+    categorical = pd.read_csv(path+f'categorical_{date}.csv')
+    categorical['fticker'] = [t for t in funds.columns if t not in ['sindex_r', 'tbond_d']]
+    categorical.set_index('fticker', inplace=True)
+
+    return funds, categorical
