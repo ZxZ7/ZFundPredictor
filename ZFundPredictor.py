@@ -6,8 +6,6 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
-sns.set_style("darkgrid")
-sns.set_context("notebook")
 
 from sklearn import preprocessing
 from sklearn.metrics import r2_score, mean_squared_error
@@ -255,8 +253,8 @@ class FundPredictor:
         for ema in ema_basket:
             for dropout in dropout_basket:
                 self.hypers.append({'ema':ema, 'dropout':dropout})
-                predicted = predictor.get_prediction(ticker, verbose=False,
-                                                     ema=ema, dropout=dropout, **pred_params)
+                predicted = self.get_prediction(ticker, verbose=False,
+                                                ema=ema, dropout=dropout, **pred_params)
                 for i in range(len(predicted)):
                     model_name = '(%s,%s)'% (predicted[i]['window'][0], predicted[i]['window'][1])
                     if model_name not in self.fine_tuning:
