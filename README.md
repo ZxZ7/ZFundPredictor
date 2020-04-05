@@ -5,8 +5,8 @@ This project aims to build a stable price predictor for open-end mutual funds av
 
 It consists of:
 
-* A **web-scraping** framework that extracts and stores data of funds from http://fund.eastmoney.com/.
-* An **ETL** pipeline that fetches, transforms and loads the raw data into datasets for machine learning models.
+* A **web-scraping** framework that extracts data of funds from http://fund.eastmoney.com/, and stores the data in a local database.
+* An **ETL** pipeline that mainly transforms the raw data into datasets for machine learning models.
 * A machine learning/deep learning **prediction tool** (currently based on LSTM only - more to come in the future).
 
 
@@ -47,7 +47,7 @@ Key libraries include `Scrapy` · `PyMySQL` · `Numpy` · `Pandas` · `Matplotli
   funds, categorical = quick_prepossessing()
   ```
   
-  For more details, please check the latest [demo]().
+  For more details, please check the latest [demo](https://github.com/ZxZ7/ZFundPredictor/tree/master/demo).
 
   This process mainly generates two datasets.
 
@@ -66,7 +66,7 @@ Key libraries include `Scrapy` · `PyMySQL` · `Numpy` · `Pandas` · `Matplotli
   ensemble_prediction = predictor.ensemble_prediction(ticker, **tune_params)
   ```
   
-  For more details, please check the latest [demo]() and the following section.
+  For more details, please check the latest [demo](https://github.com/ZxZ7/ZFundPredictor/tree/master/demo) and the following section.
 
 
 <br>
