@@ -123,9 +123,10 @@ class FundPredictor:
         dates = np.array([str(i) for i in fund.iloc[lookback:].index])
         
         k = np.round(len(X)*(1-test_size)).astype(int)
-        X_train = X[:k,:,:]
+        k_train = k - lookback - lookahead + 1  # to avoid train/text sets overlapping
+        X_train = X[:k_train,:]
         X_test = X[k:,:,:]
-        y_train = y[:k,:,0]
+        y_train = y[:k_train,:,0]
         y_test = y[k:,:,0]
 
         return [X_train, X_test, y_train, y_test, dates[k:], X_latest]
@@ -204,8 +205,9 @@ class FundPredictor:
             
             X_train, X_test, y_train, y_test, date_test, X_latest = data
             len_ = int(X_train.shape[0]*0.8)
-            X_tr = X_train[:len_].copy()
-            y_tr = y_train[:len_].copy()
+            len_train = len_ - lookback - lookahead + 1  # to avoid train/validation sets overlapping
+            X_tr = X_train[:len_train].copy()
+            y_tr = y_train[:len_train].copy()
             X_valid = X_train[len_:].copy()
             y_valid = y_train[len_:].copy()
             
