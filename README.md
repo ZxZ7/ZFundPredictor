@@ -1,4 +1,4 @@
-# ZFundPredictor (ver. 1.1)
+# ZFundPredictor (ver. 1.1.1)
 
 
 This project aims to build a stable price predictor for open-end mutual funds available in China's fund market.
@@ -122,11 +122,11 @@ The current predicting algorithm is based on LSTM with sliding windows.
      
   #### Hyperparameter Tuning
   
-    - **Epochs**: set to a large number. 
+    - **Epochs**: set to a large number
     - **Batch Size**: 300 or 400
     - **Learning Rate**: 0.0005
     - **Early Stopping**: `monitor='val_loss', min_delta=1e-5, patience=5`.
-    On average, the training stops between epoch 10 to 20. So `restore_best_weights` would not be necessary as there is little chance of blowing up.
+    On average, the training stops between epoch 10 and 20. So `restore_best_weights` would not be necessary as there is little chance of blowing up.
     - **Dropout**: 0.2 or 0.3
     
 <br>
