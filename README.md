@@ -43,8 +43,9 @@ Key libraries include `Scrapy` · `PyMySQL` · `Numpy` · `Pandas` · `Matplotli
 * ### Data Prepossessing
 
   ```
-  from ZFundETL import quick_prepossessing
-  funds, categorical = quick_prepossessing()
+  from ZFundETL import FundETL
+  ETL = FundETL()
+  funds, categorical = ETL.quick_prepossessing()
   ```
   
   For more details, please check the latest [demo](https://github.com/ZxZ7/ZFundPredictor/tree/master/demo).
