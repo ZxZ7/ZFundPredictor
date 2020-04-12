@@ -23,6 +23,10 @@ class FundPredictor:
         self.fund = []         # data of the fund (to be precited) with predicting features
         self.ema = None        # x-day exponential moving averages used for prediction (e.g. ema=[20,50])
         self.log_form = True   # when True, use exponential form of the historical prices
+
+        sns.set_style("darkgrid")
+        sns.set_context("notebook")
+    
     
     def get_features(self, ticker, log_form=True, ema=None):
         '''
@@ -358,6 +362,8 @@ class FundPredictor:
                 ax.plot(date_test_fut, pred_prices,
                         label='Model (%s,%s)'% (pred['window'][0], pred['window'][1]))
         
+        if y.shape[1] > 1:
+            y = np.array([p[0] for p in y[:-1]]+list(y[-1]))
         ax.plot(date[-show_period:], y[-show_period:], label='Actual')
         all_dates = list(date)[-show_period:] + future
         plt.xticks(range(0,len(all_dates),2), all_dates[::2], rotation=90)
