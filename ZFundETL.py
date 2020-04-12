@@ -16,14 +16,16 @@ connection = pymysql.connect(host='localhost',
                              password='*****',
                              db='funds',
                              charset='utf8mb4')
-'''
-CREATE VIEW picked AS
+cursor = connection.cursor()
+
+sql = '''
+CREATE OR REPLACE VIEW picked AS
 SELECT a.* FROM (
     SELECT fticker FROM histories
     WHERE hdate >= '2015-01-05'
     AND r_d != 0
     GROUP BY fticker
-    HAVING COUNT(*) > 1150) f
+    HAVING COUNT(*) > CEIL(DATEDIFF(CURDATE(), '2016-01-05')*0.75)) f
 JOIN (
     SELECT * FROM all_funds
     WHERE current_stocks >= 75
@@ -31,6 +33,9 @@ JOIN (
 ON a.fticker = f.fticker
 WHERE current_bonds < 25 OR current_bonds IS NULL;
 '''
+cursor.execute(sql)
+connection.commit()
+
 sql = '''
 SELECT h.fticker, h.hdate, accu_nav FROM histories h
 RIGHT JOIN picked p
@@ -53,7 +58,7 @@ FROM picked;
 st_invariants = pd.read_sql(sql, connection)
 
 connection.close()
-
+cursor.close()
 
 
 def get_index(index_type='stock'):
@@ -63,6 +68,7 @@ def get_index(index_type='stock'):
     if index_type == 'stock':
         sindex = yf.download("000001.ss", start=str(funds_sql['hdate'].min()),
                              end=str(funds_sql['hdate'].max()+timedelta(days=1)))
+        # update missing data
         sindex.loc['2019-12-19'] = [3017.15,3021.42,3007.99,3017.07,3017.07,208600]
         sindex.loc['2019-04-29'] = [3090.63,3107.76,3050.03,3062.50,3062.50,292100]
         sindex.loc['2019-04-30'] = [3052.62,3088.41,3052.62,3078.34,3078.34,222300]
@@ -203,7 +209,6 @@ def get_funds(selected_tickers, stock_index, bond_index=None, show_results=True)
         print('Final available days:', funds_.shape[0])
         
     return funds_
-
 
 
 industries = ['制造业', '金融业', '信息传输、软件和信息技术服务业', '房地产业',
