@@ -1,4 +1,4 @@
-# ZFundPredictor (ver. 1.1.1)
+# ZFundPredictor (ver. 1.2.0)
 
 
 This project aims to build a stable price predictor for open-end mutual funds available in China's fund market.
@@ -82,11 +82,17 @@ The current predicting algorithm is based on LSTM with sliding windows.
 
     - **Lookback**: the length of a sliding window, indicating how many periods we are looking back to the past.
     - **Lookahead**: the number of periods that we want to predict into the future.
-    - **EMA**: the x-day exponential moving average, a technical metric that commonly adopted by quants. 
-    
+    - **MA**: moving average indicators.
+      - `dist_EMA`: the distances between fund price and x-day exponential moving average (EMA) of the fund on each day.
+      - `signal_EMA`: one-time EMA signal. `-1` if the shorter EMA crosses above the longer EMA on that day, `1` vice versa, and `0` if there is no cross.
+      - `status_BB`: short-term status of the Bollinger Bands indictor. `-1` if the value of x-day BB indicator is below the lower band, `1` if it is above the upper band, and `0` otherwise.
+  
+
   Currently in use:<br>
-    - **[`lookback`, `lookahead`]:** [50, 1], [120, 2] and [120, 5]
-    - **EMA:** [None], [20, 50] or [5, 50] (i.e. `ema5` as 5-day EMA, and `ema50` as 50-day EMA).
+    - **`lookback, lookahead`:** [50, 1], [120, 2] and [120, 5]
+    - **MA:** [None], [20, 50] or [5, 50]
+      - `ema` - adopt only the EMA indictors `dist_EMA` (e.g. `dist_ema5` refers to 5-day EMA, and `dist_ema50` refers to 50-day EMA).
+      - `all` - adopt all available indicators.
 
 
   
