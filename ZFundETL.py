@@ -13,11 +13,11 @@ import seaborn as sns
 
 class FundETL:
     def __init__(self):
-        self.industries = ['制造业', '金融业', '信息传输、软件和信息技术服务业', '房地产业',
-              '交通运输、仓储和邮政业', '农、林、牧、渔业', '批发和零售业',
-              '采矿业', '住宿和餐饮业', '租赁和商务服务业', '水利、环境和公共设施管理业',
-              '文化、体育和娱乐业', '科学研究和技术服务业', '卫生和社会工作', '建筑业',
-              '电力、热力、燃气及水生产和供应业', '教育', '综合']
+        self.industries = ['制造业', '金融业', '信息传输、软件和信息技术服务业',
+            '房地产业', '交通运输、仓储和邮政业', '农、林、牧、渔业', '批发和零售业',
+            '采矿业', '住宿和餐饮业', '租赁和商务服务业', '水利、环境和公共设施管理业',
+            '文化、体育和娱乐业', '科学研究和技术服务业', '卫生和社会工作', '建筑业',
+            '电力、热力、燃气及水生产和供应业', '教育', '综合']
 
         sns.set_style("darkgrid")
         sns.set_context("notebook")
@@ -55,7 +55,8 @@ class FundETL:
 
 
         sql = '''
-        SELECT h.fticker, h.hdate, accu_nav FROM histories h
+        SELECT h.fticker, h.hdate, accu_nav
+        FROM histories h
         RIGHT JOIN picked p
         ON h.fticker = p.fticker
         WHERE h.hdate >= '2015-01-05';
