@@ -25,6 +25,10 @@ class FundPredictor:
         self.log_form = True   # when True, use exponential form of the historical prices
         self.indicators = 'all' # Technical indicators in use
     
+        sns.set_style("darkgrid")
+        sns.set_context("notebook")
+        
+
     def get_features(self, ticker, log_form=True, ma=None, indicators='all', show_graph=False):
         '''
         【Parameters】
@@ -34,7 +38,7 @@ class FundPredictor:
                           as well as its features.
             `indicator`:  `all` - adopt all available indicators;
                           `ema` - adopt only EMA indictors.
-
+        
         Available time series features (based on daily data):
             `diff`:       x-order (absolute) differencing of historical prices
                           e.g. `diff2` = price_t - price_(t-2).
@@ -219,7 +223,7 @@ class FundPredictor:
 
         adam = keras.optimizers.Adam(lr=lr)
         
-        model.compile(loss='mse', optimizer=adam, metrics=['accuracy'])
+        model.compile(loss='mse', optimizer=adam, metrics=['mse'])
         return model
 
 
@@ -227,10 +231,9 @@ class FundPredictor:
         y_pred = model.predict(X_test)
         new_pred = model.predict(X_latest)
     
-        
         trainScore = model.evaluate(X_train, y_train, verbose=0)[0]
-        testScore = model.evaluate(X_test, y_test, verbose=0)[0]       
-        
+        testScore = model.evaluate(X_test, y_test, verbose=0)[0]
+    
         r2 = r2_score(y_test, y_pred)
         
         if self.log_form:
@@ -242,7 +245,6 @@ class FundPredictor:
 
     def get_prediction(self, ticker, windows, log_form=True, model_type='lstm',
                        epochs=90, batches=300, dropout=0.2, lr=0.0005,
-                       n_est=1000, stop=20,
                        ma=None, indicators='all', callbacks=None, verbose=True, show_history=False):
         '''
         ** Main function **
@@ -305,10 +307,11 @@ class FundPredictor:
         if show_history:
             self.show_history()
         return self.preds
+
     
     
     def ensemble_prediction(self, ticker, ma_basket, dropout_basket, pred_params,
-                            indicators='all', verbose=True, show_history=False):
+                            verbose=True, show_history=False):
         '''
         ** Main Function **
         Get one ensemble prediction per window, with fine-tuned hyperparameters and stacked models.
@@ -318,6 +321,8 @@ class FundPredictor:
          `ma_basket`:      a list of `ma` options used for fine-tuning.
          `dropout_basket`: a list of `dropout` options used for fine-tuning.
          `pred_params`:    a dict containing other parameters for function `get_prediction()`.
+         `verbose`:        if True, print and graph the predicted results.
+         `show_history`:   if True, graph the training history.
         【Returns】
          `fine_tuning`:    a dict of subdicts, each subdict corresponding to a model with specific window.
                            e.g. model_name == 'pred(50, 1)', meaning 50-day lookback, 1-day lookahead.
@@ -331,6 +336,39 @@ class FundPredictor:
                            value lists should be (len(ma_basket)*len(dropout_basket)).
         '''
         
+        self.stacking_process(ticker=ticker, indicators='all', ma_basket=ma_basket,
+                              dropout_basket=dropout_basket, pred_params=pred_params)
+        
+        keys = [k for k in self.fine_tuning.keys()]
+        r2_stacked = np.array([self.fine_tuning[key]['stacked']['r2'] for key in keys])
+        
+        # if 'all' indicators do not perform well, try only using 'ema' indicators
+        if r2_stacked.mean()<0.63 or r2_stacked[-1]<0.5 or r2_stacked.min()<0:
+            fune_tuning_ = self.fine_tuning
+            
+            self.stacking_process(ticker=ticker, indicators='ema', ma_basket=ma_basket,
+                                  dropout_basket=dropout_basket, pred_params=pred_params)            
+            
+            r2_stacked_new = np.array([self.fine_tuning[key]['stacked']['r2'] for key in keys])
+            
+            r2_diff = r2_stacked - r2_stacked_new
+            if (r2_diff>0.01).mean() >= 0.5 and (r2_diff<-0.05).sum() == 0:
+                self.fine_tuning = fune_tuning_
+                
+        if verbose:
+            self.allow_verbosity(fine_tuning=True)
+        if show_history:
+            self.show_history(fine_tuning=True)            
+            
+        return self.fine_tuning
+    
+    
+    
+    def stacking_process(self, ticker, ma_basket, dropout_basket, pred_params,
+                         indicators='all'):
+        '''
+        The model stacking process for ensemble prediction.
+        '''
         self.fine_tuning = {}
         self.hypers = []
         for ma in ma_basket:
@@ -394,12 +432,7 @@ class FundPredictor:
             
             model['stacked']['preds'] = y_pred
             model['stacked']['newpreds'] = fut_pred
-        
-        if verbose:
-            self.allow_verbosity(fine_tuning=True)
-        if show_history:
-            self.show_history(fine_tuning=True)
-        return self.fine_tuning
+            model['stacked']['r2'] = r2_score(np.exp(self.preds[i]['data'][3]), y_pred)
 
     
     def allow_verbosity(self, model_type='lstm', fine_tuning=False, show_period=120):
@@ -411,7 +444,6 @@ class FundPredictor:
         for i, pred in enumerate(self.preds):
             y_test = pred['data'][3]
             date_test = pred['data'][4]
-
             future_dates = ['T + %s'% (x+1) for x in range(pred['window'][1])]
             date_test_fut = list(date_test[-show_period:]) + future_dates
             
@@ -423,7 +455,8 @@ class FundPredictor:
             if len(future_dates) > len(future):
                 future = future_dates
 
-            print('='*15, '%s: Model (%s, %s)'% (self.ticker, pred['window'][0], pred['window'][1]),'='*15)
+            print('='*15, "%s / Model (%s, %s) / '%s'"% (self.ticker,
+                   pred['window'][0], pred['window'][1], self.indicators),'='*15)
             print('Train Size:', pred['data'][0].shape, pred['data'][1].shape)
             print('Test Size:', pred['data'][2].shape, pred['data'][3].shape)
             print('Size of Data for Future Prediction:', pred['data'][-1].shape)
@@ -432,11 +465,9 @@ class FundPredictor:
             if fine_tuning:     # when called by ensemble_prediction()
                 keys = [k for k in self.fine_tuning.keys()]
                 stacked_preds = self.fine_tuning[keys[i]]['stacked']
-                
-                r2_ensemble = r2_score(y_test, stacked_preds['preds'])
-                
+                                
                 print('Selected Hyperparameters:', stacked_preds['hypers'])
-                print('R-Squared (ensemble): %.4f' % r2_ensemble)
+                print('R-Squared (ensemble): %.4f' % stacked_preds['r2'])
                 print('Future Prediction: %s' % [round(float(x),4) for x in stacked_preds['newpreds'][0]])
                 
                 pred_prices = [p[-1] for p in stacked_preds['preds']]
