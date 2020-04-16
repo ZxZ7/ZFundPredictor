@@ -91,8 +91,8 @@ The current predicting algorithm is based on LSTM with sliding windows.
   Currently in use:<br>
     - **`lookback, lookahead`:** [50, 1], [120, 2] and [120, 5]
     - **MA:** [None], [20, 50] or [5, 50]
-      - `ema` - adopt only the EMA indictors `dist_EMA` (e.g. `dist_ema5` refers to 5-day EMA, and `dist_ema50` refers to 50-day EMA).
-      - `all` - adopt all available indicators.
+      - `'ema'` - adopt only the EMA indictors `dist_EMA` (e.g. `dist_ema5` refers to 5-day EMA, and `dist_ema50` refers to 50-day EMA).
+      - `'all'` - adopt all available indicators.
 
 
   
@@ -120,7 +120,7 @@ The current predicting algorithm is based on LSTM with sliding windows.
   
     When `get_prediction()` is called, the training set will go through the above layers and a 	***single*** model prediction will be generated with the provided parameters.
     
-     `ensemble_prediction()` allows a basket of **EMA** options and a basket of **dropout** options. Each combination will form a new model, and based on their **R-squared** scores, the final prediction will be the weighted average of some of these models.
+     `ensemble_prediction()` allows a basket of **MA** options and a basket of **dropout** options. Each combination will form a new model, and based on their **R-squared** scores, the final prediction will be the weighted average of some of these models.
      
      An illustration of `ensemble_prediction()`:
      
