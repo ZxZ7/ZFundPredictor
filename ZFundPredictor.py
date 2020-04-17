@@ -51,7 +51,7 @@ class FundPredictor:
             `dist_EMA`:   the distances between fund price and x-day EMA of the fund on each day.
             `signal_EMA`: one-time signal. `-1` if the shorter EMA crosses above the longer
                           EMA on that day, `1` vice versa, and `0` if there is no cross.
-            `BB`:         the Bollinger Bands indictors over the past x days.
+            `BB`:         the Bollinger Bands indicators over the past x days.
                           `lower_BB` means the lower band, and `upper_BB` for the upper.
             `status_BB`:  short-term status. `-1` if the value of BB indicator is below the
                           lower band, `1` if it is above the upper band, and `0` otherwise.
@@ -183,7 +183,7 @@ class FundPredictor:
                 ax.plot(fund.index[:], self.fund_allfeat['upper_BB%s'%x][:], label='upper_band%s'%x)
                 ax.plot(fund.index[:], self.fund_allfeat['lower_BB%s'%x][:], label='lower_band%s'%x)
                 ax.legend()
-                ax.set_ylabel('Bolinger Bands')
+                ax.set_ylabel('Bollinger Bands')
     
     
     def split_data(self, lookback, lookahead, test_size=0.2):
@@ -336,17 +336,17 @@ class FundPredictor:
                            value lists should be (len(ma_basket)*len(dropout_basket)).
         '''
         
-        self.stacking_process(ticker=ticker, indicators='all', ma_basket=ma_basket,
+        self.stacking_process(indicators='all', ticker=ticker, ma_basket=ma_basket,
                               dropout_basket=dropout_basket, pred_params=pred_params)
         
-        keys = [k for k in self.fine_tuning.keys()]
+        keys = predictor.fine_tuning.keys()
         r2_stacked = np.array([self.fine_tuning[key]['stacked']['r2'] for key in keys])
         
-        # if 'all' indicators do not perform well, try only using 'ema' indicators
+        # if 'all' indicators do not perform well, try using only 'ema' indicators
         if r2_stacked.mean()<0.63 or r2_stacked[-1]<0.5 or r2_stacked.min()<0:
             fune_tuning_ = self.fine_tuning
             
-            self.stacking_process(ticker=ticker, indicators='ema', ma_basket=ma_basket,
+            self.stacking_process(indicators='ema', ticker=ticker, ma_basket=ma_basket,
                                   dropout_basket=dropout_basket, pred_params=pred_params)            
             
             r2_stacked_new = np.array([self.fine_tuning[key]['stacked']['r2'] for key in keys])
@@ -388,7 +388,6 @@ class FundPredictor:
                     self.fine_tuning[model_name]['histories'].append(predicted[i]['history'])
                     self.fine_tuning[model_name]['models'].append(predicted[i]['model'])
         
-        keys = [k for k in self.fine_tuning.keys()]
         
         # Note: According to our splitting method, different ma values lead to 
         #       different data length, which in turn results in different length
@@ -396,20 +395,21 @@ class FundPredictor:
         #       equal length accross all predictions. The process below is intended
         #       to find the maximum possible length given the `ma_basket`.
         max_ma = np.array([i for ma in ma_basket if ma != None for i in ma]).max()
-        max_data_length = self.funds[ticker].shape[0] - max_ma + 1
+        data_length = self.funds[ticker].shape[0] - max_ma + 1
         
-        for i in range(len(keys)):
+        test_size = 0.2
+        for i, key in enumerate(self.fine_tuning.keys()):
             lookback, lookahead = self.preds[i]['window']
-            _max_len = max_data_length - lookback - lookahead + 1
-            test_length = _max_len - np.round(_max_len*(1-0.2)).astype(int)
+            max_data_len = data_length - lookback - lookahead + 1
+            max_test_len = max_data_len - np.round(max_data_len*(1-test_size)).astype(int)
+                 
+            model = self.fine_tuning[key]
             
+            for num in range(len(model['preds'])):
+                if len(model['preds'][num]) > max_test_len:
+                    model['preds'][num] = model['preds'][num][-max_test_len:]
             
-            model = self.fine_tuning[keys[i]]
-            
-            for ix in range(len(model['preds'])):
-                if len(model['preds'][ix]) > test_length:
-                    model['preds'][ix] = model['preds'][ix][-test_length:]
-                        
+
             ## stacking models ##
             model['stacked'] = {'hypers':[]}
             pred_sorted = np.array(model['r2']).argsort()  # returns the indices that would sort the array
@@ -463,8 +463,8 @@ class FundPredictor:
             
             
             if fine_tuning:     # when called by ensemble_prediction()
-                keys = [k for k in self.fine_tuning.keys()]
-                stacked_preds = self.fine_tuning[keys[i]]['stacked']
+                key = [k for k in self.fine_tuning.keys()][i]
+                stacked_preds = self.fine_tuning[key]['stacked']
                                 
                 print('Selected Hyperparameters:', stacked_preds['hypers'])
                 print('R-Squared (ensemble): %.4f' % stacked_preds['r2'])
@@ -472,7 +472,7 @@ class FundPredictor:
                 
                 pred_prices = [p[-1] for p in stacked_preds['preds']]
                 pred_prices = pred_prices[-show_period:] + list(stacked_preds['newpreds'][0])
-                ax.plot(date_test_fut, pred_prices, label='Ensemble '+keys[i])
+                ax.plot(date_test_fut, pred_prices, label='Ensemble '+key)
 
             else:     # when called by get_prediction()
 
@@ -510,31 +510,36 @@ The plotted values for future dates (T+1,...) are `a`-day consecutive forecast(s
         
     def show_history(self, fine_tuning=False):
         if fine_tuning:
-            keys = [k for k in self.fine_tuning.keys()]
-            fig = plt.figure(figsize=(3*len(self.hypers), 2*len(keys)))
+            len_ = len(self.fine_tuning)
+            fig = plt.figure(figsize=(3*len(self.hypers), 2*len_))
             j = 0
-            for key in keys:
+            for key in predictor.fine_tuning.keys():
                 for history in self.fine_tuning[key]['histories']:
-                    ax = fig.add_subplot(len(keys), len(self.hypers), j+1)
+                    ax = fig.add_subplot(len_, len(self.hypers), j+1)
                     fig.tight_layout()
                     ax.plot(history.history['loss'])
                     ax.plot(history.history['val_loss'])
+
                     if j < len(self.hypers):
                         plt.title('MA: {}, Dropout: {}'.format(self.hypers[j]['ma'], self.hypers[j]['dropout']))
                     if j % len(self.hypers) == 0:
                         plt.ylabel('Model '+key)
-                    if j >= len(self.hypers)*(len(keys)-1):
+                    if j >= len(self.hypers)*(len_-1):
                         plt.xlabel('epoch')
                     plt.legend(['train loss', 'val loss'], loc='upper right')
+
                     j += 1
+        
         else:
             fig = plt.figure(figsize=(4*len(self.preds), 3))
             for j,pred in enumerate(self.preds):
                 ax = fig.add_subplot(1, len(self.preds), j+1)
                 fig.tight_layout()
+                
                 ax.plot(pred['history'].history['loss'])
                 ax.plot(pred['history'].history['val_loss'])
                 plt.xlabel('epoch')
                 plt.title(f'Model (%s,%s)'% (pred['window'][0], pred['window'][1]))
                 plt.legend(['train loss', 'val loss'], loc='upper right')
+        
         plt.show()

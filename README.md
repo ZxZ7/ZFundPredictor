@@ -54,7 +54,7 @@ Key libraries include `Scrapy` · `PyMySQL` · `Numpy` · `Pandas` · `Matplotli
 
   - `funds`: contains the **historical daily prices** of available funds during the selected period, plus the **daily returns** of the benchmarks (stock or bond index).
 
-  - `categorical`: contains all the short-term invariant features, including fund types, fund styles, asset size of funds, ranking scores (manager performance), asset allocation, and industry allocation.
+  - `categorical`: contains all the short-term invariant features, including fund types, fund styles, asset size, ranking scores (manager performance), asset allocation, and industry allocation.
 
 
 
@@ -85,13 +85,13 @@ The current predicting algorithm is based on LSTM with sliding windows.
     - **MA**: moving average indicators.
       - `dist_EMA`: the distances between fund price and x-day exponential moving average (EMA) of the fund on each day.
       - `signal_EMA`: one-time EMA signal. `-1` if the shorter EMA crosses above the longer EMA on that day, `1` vice versa, and `0` if there is no cross.
-      - `status_BB`: short-term status of the Bollinger Bands indictor. `-1` if the value of x-day BB indicator is below the lower band, `1` if it is above the upper band, and `0` otherwise.
+      - `status_BB`: short-term status of the Bollinger Bands indicator. `-1` if the value of x-day BB indicator is below the lower band, `1` if it is above the upper band, and `0` otherwise.
   
 
   Currently in use:<br>
     - **`lookback, lookahead`:** [50, 1], [120, 2] and [120, 5]
     - **MA:** [None], [20, 50] or [5, 50]
-      - `'ema'` - adopt only the EMA indictors `dist_EMA` (e.g. `dist_ema5` refers to 5-day EMA, and `dist_ema50` refers to 50-day EMA).
+      - `'ema'` - adopt only the EMA indictors `dist_ema` (e.g. `dist_ema5` refers to 5-day EMA, and `dist_ema50` refers to 50-day EMA).
       - `'all'` - adopt all available indicators.
 
 

@@ -29,7 +29,7 @@ class FundETL:
         '''
         connection = pymysql.connect(host='localhost',
                                      user='root',
-                                     password='*****',
+                                     password='root',
                                      db='funds',
                                      charset='utf8mb4')
 
@@ -125,7 +125,7 @@ class FundETL:
                 fig.tight_layout()        
                 ax.pie([_null, _notnull], radius=1.1, wedgeprops=dict(width=0.2),
                        colors=sns.color_palette('twilight_shifted', n_colors=2),
-                       autopct=lambda pct: '{:.2f}%\n(# NA: {:.0f})'.format(pct, _null) 
+                       autopct=lambda pct: '# NA: {:.0f}\n# All: {:.0f}'.format(_null, _null+_notnull) 
                                 if int(pct) == int(_null/(_notnull+_null)*100) else '')
                 plt.xlabel(ticker)
 
@@ -166,7 +166,7 @@ class FundETL:
 
     def ticker_filter(self, show_results=True):
         '''
-        Filter out the funds with missing values.
+        Filter out funds with missing values.
         '''
         drop_tickers = self.find_missing_values(show_results)
         tickers_common_length = self.count_days(show_results)
@@ -360,12 +360,21 @@ class FundETL:
         return funds, categorical
 
 
-    def save_files(self, path, date):
+    def save_files(self, path):
+        '''
+        Save the prepossessed `funds` and `categorical` datasets to a local directory.
+        '''
+        date = self.funds.index[-1].strftime('%Y%m%d')
         self.funds.to_csv(path+f'funds_{date}.csv')
         self.categorical.to_csv(path+f'categorical_{date}.csv', index=False)
 
 
     def read_files(self, path, date):
+        '''
+        Read in existing `funds` and `categorical` datasets.
+
+            `date`: a time string taking the form of '%Y%m%d'.
+        '''
         funds = pd.read_csv(path+f'funds_{date}.csv')
         funds = funds.set_index(pd.to_datetime(funds['Date']).dt.date).drop(columns='Date').sort_index()
         categorical = pd.read_csv(path+f'categorical_{date}.csv')
