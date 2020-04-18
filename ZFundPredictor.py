@@ -363,7 +363,7 @@ class FundPredictor:
         self.stacking_process(indicators='all', ticker=ticker, ma_basket=ma_basket,
                               dropout_basket=dropout_basket, pred_params=pred_params)
         
-        keys = predictor.fine_tuning.keys()
+        keys = self.fine_tuning.keys()
         r2_stacked = np.array([self.fine_tuning[key]['stacked']['r2'] for key in keys])
         
         # if 'all' indicators do not perform well, try using only 'ema' indicators
@@ -537,7 +537,7 @@ The plotted values for future dates (T+1,...) are `a`-day consecutive forecast(s
             len_ = len(self.fine_tuning)
             fig = plt.figure(figsize=(3*len(self.hypers), 2*len_))
             j = 0
-            for key in predictor.fine_tuning.keys():
+            for key in self.fine_tuning.keys():
                 for history in self.fine_tuning[key]['histories']:
                     ax = fig.add_subplot(len_, len(self.hypers), j+1)
                     fig.tight_layout()
