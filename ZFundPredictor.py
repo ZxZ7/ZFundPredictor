@@ -40,22 +40,26 @@ class FundPredictor:
                           `ema` - adopt only EMA indictors.
         
         Available time series features (based on daily data):
-            `diff`:       x-order (absolute) differencing of historical prices
-                          e.g. `diff2` = price_t - price_(t-2).
-            `r`:          daily return of the fund.
-            `sindex_r`:   market daily return.
-            `r_premium`:  market adjusted daily return of the fund.
-            `EMA`:        x-day exponential moving averages used for prediction
-                          e.g. ma=[20,50] will generate two varables -
-                              `ema20`, the 20-day EMA, and `ema50`, the 50-day EMA.
-            `dist_EMA`:   the distances between fund price and x-day EMA of the fund on each day.
-            `signal_EMA`: one-time signal. `-1` if the shorter EMA crosses above the longer
-                          EMA on that day, `1` vice versa, and `0` if there is no cross.
-            `BB`:         the Bollinger Bands indicators over the past x days.
-                          `lower_BB` means the lower band, and `upper_BB` for the upper.
-            `status_BB`:  short-term status. `-1` if the value of BB indicator is below the
-                          lower band, `1` if it is above the upper band, and `0` otherwise.
+            `diff`:        x-order (absolute) differencing of historical prices
+                           e.g. `diff2` = price_t - price_(t-2).
+            `r`:           daily return of the fund.
+            `sindex_r`:    market daily return.
+            `r_premium`:   market adjusted daily return of the fund.
+            `EMA`:         x-day exponential moving averages used for prediction
+                           e.g. ma=[20,50] will generate two varables -
+                               `ema20`, the 20-day EMA, and `ema50`, the 50-day EMA.
+            `dist_EMA`:    the distances between fund price and x-day EMA of the fund on each day.
+            `signal_EMA`:  one-time signal. `-1` if the shorter EMA crosses above the longer
+                           EMA on that day, `1` vice versa, and `0` if there is no cross.
+            `BB`:          the Bollinger Bands indicators over the past x days.
+                           `lower_BB` means the lower band, and `upper_BB` for the upper.
+            `status_BB`:   short-term status. `-1` if the value of BB indicator is below the
+                           lower band, `1` if it is above the upper band, and `0` otherwise.
+            `MACD`:        moving average convergence/divergence. 12-day EMA minus 26-period EMA.
+            `MACD_signal`: MACD Signal Line. 9-period EMA of the MACD.
+            `MACD_hist`:   MACD Histogram. MACD minus the MACD Signal Line.
         '''
+        
         assert indicators in ['all', 'ema'], "`indicators` must in ['all', 'ema']"
         assert ma == None or len(ma) == 2, "`ma` must contain two periods."
         
@@ -91,8 +95,8 @@ class FundPredictor:
                 if indicators == 'all':
                     keep_col.append('status_BB%s'%x)
                     fund_BB = (fund[ticker] - fund['SMA%s'%x]) / (2*rolling_std)
-    # #                 fund['status_BB%s'%x] = fund_BB.apply(lambda x: x-1 if x > 1 
-    # #                                                       else (x+1 if x < -1 else 0))
+    #                 fund['status_BB%s'%x] = fund_BB.apply(lambda x: x-1 if x > 1 
+    #                                                       else (x+1 if x < -1 else 0))
                     fund['status_BB%s'%x] = fund_BB.apply(lambda x: 1 if x > 1 
                                                           else (-1 if x < -1 else 0))
     
@@ -109,6 +113,14 @@ class FundPredictor:
                 fund.loc[fund[(fund['diff_EMA'] < 0) & (fund['diff_lag'] >= 0)].index, 'signal_EMA'] = -1
                 fund.loc[fund[(fund['diff_EMA'] > 0) & (fund['diff_lag'] <= 0)].index, 'signal_EMA'] = 1
                 fund.drop(columns=['diff_lag'], inplace=True)
+                
+                
+#                 keep_col.append('MACD_hist')
+                fund['MACD'] = fund[ticker].ewm(span=12, adjust=False).mean() - \
+                               fund[ticker].ewm(span=26, adjust=False).mean()
+                fund['MACD_signal'] = fund['MACD'].ewm(span=9, adjust=False).mean()
+                fund['MACD_hist'] = fund['MACD'] - fund['MACD_signal']
+                fund.loc[fund[:26+9-1].index ,'MACD_hist'] = None
 
         
         if log_form:
@@ -132,6 +144,7 @@ class FundPredictor:
     def draw_histories(self, ticker, ma=None, log_form=True):
         if ticker != self.ticker or ma != self.ma or log_form != self.log_form:
             self.get_features(ticker, log_form=log_form, ma=ma)
+        
         fund = self.fund
         if log_form:
             fund_prices = fund.iloc[:, 0].apply(np.exp)
@@ -146,13 +159,13 @@ class FundPredictor:
         fig = plt.figure(figsize=(16,10))
 
         ax1 = fig.add_subplot(411)
-        ax1.plot(fund.index[:], fund_prices)
+        ax1.plot(fund.index, fund_prices)
         ax1.set_ylabel('Price (daily)')
         plt.title(ticker, fontsize=14)
 
         ax2 = fig.add_subplot(412)
-        ax2.plot(fund.index[:], fund['sindex_r'][:], label='market')
-        ax2.plot(fund.index[:], fund['r_premium'][:], label='stock(mkt_adjusted)')
+        ax2.plot(fund.index, fund['sindex_r'], label='market')
+        ax2.plot(fund.index, fund['r_premium'], label='stock(mkt_adjusted)')
         ax2.set_ylabel('Return (daily)')
         ax2.legend()
         
@@ -161,29 +174,40 @@ class FundPredictor:
             if var in fund.columns:
                 i += 1
                 ax = fig.add_subplot(4,1,i)
-                ax.plot(fund.index[:], fund[var][:])            
+                ax.plot(fund.index, fund[var])            
                 ax.set_ylabel(var)
         
         if ma:
-            len_ = len(ma) + 1
-            fig = plt.figure(figsize=(16, len_*5))
-            
-            ax = fig.add_subplot(len_, 1, 1)
+            len_ = len(ma) + 2
+        else:
+            len_ = 1
+        
+        fig = plt.figure(figsize=(16, len_*5))
+        
+        ax = fig.add_subplot(len_, 1, 1)
+        ax.plot(fund.index, self.fund_allfeat['MACD'], label='MACD')
+        ax.plot(fund.index, self.fund_allfeat['MACD_signal'], label='MACD_signal')
+        ax.set_ylabel('MACD')
+        ax.legend()
+        
+        if ma:   
+            ax = fig.add_subplot(len_, 1, 2)
             for x in ma:
-                ax.plot(fund.index[:], fund['dist_EMA%s'%x][:], label='dist_EMA%s'%x)
+                ax.plot(fund.index, fund['dist_EMA%s'%x], label='dist_EMA%s'%x)
 #                 ax.plot(fund.index[:], self.fund_allfeat['EMA%s'%x][:], label='EMA%s'%x)
             ax.legend()
             ax.set_ylabel('Distance From EMA')
             
-            for i in range(len(ma)):
-                ax = fig.add_subplot(len_, 1, i+2)
-                x = ma[i]
-                ax.plot(fund.index[:], fund_prices, label='price')
-                ax.plot(fund.index[:], self.fund_allfeat['SMA%s'%x][:], label='SMA%s'%x)
-                ax.plot(fund.index[:], self.fund_allfeat['upper_BB%s'%x][:], label='upper_band%s'%x)
-                ax.plot(fund.index[:], self.fund_allfeat['lower_BB%s'%x][:], label='lower_band%s'%x)
+            for j in range(len(ma)):
+                ax = fig.add_subplot(len_, 1, j+3)
+                x = ma[j]
+                ax.plot(fund.index, fund_prices, label='price')
+                ax.plot(fund.index, self.fund_allfeat['SMA%s'%x], linestyle='dashed', label='SMA%s'%x)
+                ax.plot(fund.index, self.fund_allfeat['upper_BB%s'%x], label='upper_band%s'%x)
+                ax.plot(fund.index, self.fund_allfeat['lower_BB%s'%x], label='lower_band%s'%x)
                 ax.legend()
                 ax.set_ylabel('Bollinger Bands')
+    
     
     
     def split_data(self, lookback, lookahead, test_size=0.2):
@@ -325,7 +349,7 @@ class FundPredictor:
          `show_history`:   if True, graph the training history.
         【Returns】
          `fine_tuning`:    a dict of subdicts, each subdict corresponding to a model with specific window.
-                           e.g. model_name == 'pred(50, 1)', meaning 50-day lookback, 1-day lookahead.
+                           e.g. model_name == '(50,1)', meaning 50-day lookback, 1-day lookahead.
                            {model_name:{'r2': [r2_tuning_1, r2_tuning_2, ...],
                                         'preds': [y_pred_tuning_1, y_pred_tuning_2, ...],
                                         'newpreds': [...],
@@ -432,7 +456,7 @@ class FundPredictor:
             
             model['stacked']['preds'] = y_pred
             model['stacked']['newpreds'] = fut_pred
-            model['stacked']['r2'] = r2_score(np.exp(self.preds[i]['data'][3]), y_pred)
+            model['stacked']['r2'] = r2_score(np.exp(self.preds[i]['data'][3])[-max_test_len:], y_pred)
 
     
     def allow_verbosity(self, model_type='lstm', fine_tuning=False, show_period=120):
