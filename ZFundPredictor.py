@@ -27,7 +27,17 @@ class FundPredictor:
     
         sns.set_style("darkgrid")
         sns.set_context("notebook")
-        
+    
+
+    def get_randticker(self):
+        '''
+        Get a random ticker from the `funds` dataset.
+        '''
+        tickers = [t for t in self.funds.columns if t not in ['sindex_r', 'tbond_d']]
+        randticker = tickers[np.random.randint(len(tickers), size=1)[0]]
+
+        return randticker
+
 
     def get_features(self, ticker, log_form=True, ma=None, indicators='all', show_graph=False):
         '''
@@ -62,9 +72,9 @@ class FundPredictor:
         
         assert indicators in ['all', 'ema'], "`indicators` must in ['all', 'ema']"
         assert ma == None or len(ma) == 2, "`ma` must contain two periods."
-        
-        self.indicators = indicators
+
         self.ticker = ticker
+        self.indicators = indicators
         self.ma = ma
         if log_form != self.log_form:
             self.log_form = log_form
@@ -76,9 +86,16 @@ class FundPredictor:
 
         fund = pd.concat([fund, self.funds['sindex_r']], axis=1)
         fund['r_premium'] = fund['r'] - fund['sindex_r']
-
+        
+        fund['MACD'] = fund[ticker].ewm(span=12, adjust=False).mean() - \
+                       fund[ticker].ewm(span=26, adjust=False).mean()
+        fund['MACD_signal'] = fund['MACD'].ewm(span=9, adjust=False).mean()
+        fund['MACD_hist'] = fund['MACD'] - fund['MACD_signal']
+        
         keep_col = [ticker, 'diff1', 'diff2', 'sindex_r', 'r_premium']
+        
         if ma:
+            
             for x in ma:
                 keep_col.append('dist_EMA%s'%x)
 #                 keep_col.append('EMA%s'%x)
@@ -99,8 +116,12 @@ class FundPredictor:
     #                                                       else (x+1 if x < -1 else 0))
                     fund['status_BB%s'%x] = fund_BB.apply(lambda x: 1 if x > 1 
                                                           else (-1 if x < -1 else 0))
-    
+        
+            
             if indicators == 'all':
+#                 fund.loc[fund[:26+9-1].index ,'MACD_hist'] = None
+#                 keep_col.append('MACD_hist')                
+                
                 keep_col.append('signal_EMA')
                 fund['signal_EMA'] = 0
 
@@ -113,14 +134,6 @@ class FundPredictor:
                 fund.loc[fund[(fund['diff_EMA'] < 0) & (fund['diff_lag'] >= 0)].index, 'signal_EMA'] = -1
                 fund.loc[fund[(fund['diff_EMA'] > 0) & (fund['diff_lag'] <= 0)].index, 'signal_EMA'] = 1
                 fund.drop(columns=['diff_lag'], inplace=True)
-                
-                
-#                 keep_col.append('MACD_hist')
-                fund['MACD'] = fund[ticker].ewm(span=12, adjust=False).mean() - \
-                               fund[ticker].ewm(span=26, adjust=False).mean()
-                fund['MACD_signal'] = fund['MACD'].ewm(span=9, adjust=False).mean()
-                fund['MACD_hist'] = fund['MACD'] - fund['MACD_signal']
-                fund.loc[fund[:26+9-1].index ,'MACD_hist'] = None
 
         
         if log_form:
@@ -143,7 +156,7 @@ class FundPredictor:
 
     def draw_histories(self, ticker, ma=None, log_form=True):
         if ticker != self.ticker or ma != self.ma or log_form != self.log_form:
-            self.get_features(ticker, log_form=log_form, ma=ma)
+            self.get_features(ticker=ticker, log_form=log_form, ma=ma)
         
         fund = self.fund
         if log_form:
@@ -156,50 +169,41 @@ class FundPredictor:
         sns.heatmap(corrmat, vmax=0.9, square=True)
         
         
-        fig = plt.figure(figsize=(16,10))
-
-        ax1 = fig.add_subplot(411)
-        ax1.plot(fund.index, fund_prices)
-        ax1.set_ylabel('Price (daily)')
-        plt.title(ticker, fontsize=14)
-
-        ax2 = fig.add_subplot(412)
-        ax2.plot(fund.index, fund['sindex_r'], label='market')
-        ax2.plot(fund.index, fund['r_premium'], label='stock(mkt_adjusted)')
-        ax2.set_ylabel('Return (daily)')
-        ax2.legend()
-        
-        i = 2
-        for var in ['diff2', 'diff1']:
-            if var in fund.columns:
-                i += 1
-                ax = fig.add_subplot(4,1,i)
-                ax.plot(fund.index, fund[var])            
-                ax.set_ylabel(var)
-        
         if ma:
-            len_ = len(ma) + 2
+            len_ = len(ma) + 5
         else:
-            len_ = 1
+            len_ = 3
         
-        fig = plt.figure(figsize=(16, len_*5))
+        fig = plt.figure(figsize=(16, len_*4))
+
+        ax = fig.add_subplot(len_,1, 1)
+        ax.plot(fund.index, fund_prices)
+        ax.set_ylabel('Price (daily)')
+        plt.title(self.ticker, fontsize=14)
+
+        ax = fig.add_subplot(len_,1, 2)
+        ax.plot(fund.index, fund['sindex_r'], label='market')
+        ax.plot(fund.index, fund['r_premium'], label='stock(mkt_adjusted)')
+        ax.set_ylabel('Return (daily)')
+        ax.legend()
         
-        ax = fig.add_subplot(len_, 1, 1)
+        ax = fig.add_subplot(len_,1, 3)
         ax.plot(fund.index, self.fund_allfeat['MACD'], label='MACD')
         ax.plot(fund.index, self.fund_allfeat['MACD_signal'], label='MACD_signal')
         ax.set_ylabel('MACD')
         ax.legend()
         
-        if ma:   
-            ax = fig.add_subplot(len_, 1, 2)
+        if ma:
+            
+            ax = fig.add_subplot(len_, 1, 4)
             for x in ma:
                 ax.plot(fund.index, fund['dist_EMA%s'%x], label='dist_EMA%s'%x)
-#                 ax.plot(fund.index[:], self.fund_allfeat['EMA%s'%x][:], label='EMA%s'%x)
+    #                 ax.plot(fund.index[:], self.fund_allfeat['EMA%s'%x][:], label='EMA%s'%x)
             ax.legend()
             ax.set_ylabel('Distance From EMA')
-            
+
             for j in range(len(ma)):
-                ax = fig.add_subplot(len_, 1, j+3)
+                ax = fig.add_subplot(len_, 1, j+5)
                 x = ma[j]
                 ax.plot(fund.index, fund_prices, label='price')
                 ax.plot(fund.index, self.fund_allfeat['SMA%s'%x], linestyle='dashed', label='SMA%s'%x)
@@ -291,7 +295,7 @@ class FundPredictor:
                                  'history': training history}
         '''
         if ticker != self.ticker or ma != self.ma or indicators != self.indicators:
-            self.get_features(ticker, ma=ma, indicators=indicators, log_form=log_form)
+            self.get_features(ticker=ticker, ma=ma, indicators=indicators, log_form=log_form)
         fund = self.fund
 
         try:
@@ -398,7 +402,7 @@ class FundPredictor:
         for ma in ma_basket:
             for dropout in dropout_basket:
                 self.hypers.append({'ma':ma, 'dropout':dropout})
-                predicted = self.get_prediction(ticker, ma=ma, dropout=dropout,
+                predicted = self.get_prediction(ticker=ticker, ma=ma, dropout=dropout,
                                                 indicators=indicators,
                                                 verbose=False, **pred_params)
                 for i in range(len(predicted)):
