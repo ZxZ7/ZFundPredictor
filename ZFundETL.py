@@ -283,7 +283,7 @@ class FundETL:
         '''
         industry_count = len(self.industries)
         dicts = [{'混合型':'hybrid', '股票型':'stock', '股票指数':'stock index'},
-                 {'大盘价值':'large value', '大盘平衡':'large balanced', '中盘成长':'large growth',
+                 {'大盘价值':'large value', '大盘平衡':'large balanced', '大盘成长':'large growth',
                   '中盘价值':'mid value', '中盘平衡':'mid balanced', '中盘成长':'mid growth',
                   '小盘价值':'small value', '小盘平衡':'small balanced', '小盘成长':'small growth'}]
         groups = ['fund_type', 'fund_style', 'asset_size', 'ranking_score']
