@@ -48,7 +48,7 @@ Key libraries include `Scrapy` · `PyMySQL` · `Numpy` · `Pandas` · `Matplotli
   funds, categorical = ETL.quick_prepossessing()
   ```
   
-  For more details, please check the latest [demo](https://github.com/ZxZ7/ZFundPredictor/tree/master/demo).
+  For more details, please check the [demo](https://github.com/ZxZ7/ZFundPredictor/tree/master/demo).
 
   This process mainly generates two datasets.
 
@@ -67,7 +67,7 @@ Key libraries include `Scrapy` · `PyMySQL` · `Numpy` · `Pandas` · `Matplotli
   ensemble_prediction = predictor.ensemble_prediction(ticker, **tune_params)
   ```
   
-  For more details, please check the latest [demo](https://github.com/ZxZ7/ZFundPredictor/tree/master/demo) and the following section.
+  For more details, please see the following section and the [demo](https://github.com/ZxZ7/ZFundPredictor/tree/master/demo).
 
 
 <br>
@@ -132,8 +132,8 @@ The current predicting algorithm is based on LSTM with sliding windows.
     - **Epochs**: set to a large number
     - **Batch Size**: 300 or 400
     - **Learning Rate**: 0.0005
-    - **Early Stopping**: `monitor='val_loss', min_delta=1e-5, patience=5`.
-    On average, the training stops between epoch 10 and 20. So `restore_best_weights` would not be necessary as there is little chance of blowing up.
+    - **Early Stopping**: `monitor='val_loss', min_delta=1e-5, patience=5, restore_best_weights=True`
+    On average, the training stops between epoch 10 and 20.
     - **Dropout**: 0.2 or 0.3
     
 <br>
